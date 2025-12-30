@@ -1,0 +1,35 @@
+name: drawing_viewer
+description: 图纸查看与下载系统
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0
+  path_provider: ^2.0.15
+  pdfx: ^2.6.0
+  mobile_scanner: ^3.5.2
+  dio: ^5.4.0
+  open_file: ^3.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1  # ✅ 放在 dev_dependencies
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/icon.png
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/icon.png"
+  adaptive_icon_background: "#2196F3"
+  adaptive_icon_foreground: "assets/icons/icon.png"
