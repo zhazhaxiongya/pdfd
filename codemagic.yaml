@@ -1,81 +1,55 @@
 workflows:
-  ios-release:
-    name: pdf_D
+  ios-release-workflow:
+    name: iOS Release Workflow
+    max_build_duration: 60
     environment:
-      groups:
-        - ios_code_signing  # 包含证书的环境变量组
-      vars:
-        XCODE_WORKSPACE: "Runner.xcworkspace"
-        XCODE_SCHEME: "Runner"
-        BUNDLE_ID: "com.example.pdf_zq"  # 替换为你的实际 Bundle ID
-      xcode: latest  # 使用最新 Xcode 版本
-      cocoapods: default  # 使用默认 CocoaPods 版本
       flutter: stable
-    
+      xcode: latest
+      cocoapods: default
+      vars:
+        FLUTTER_CHANNEL: stable
     triggering:
       events:
         - push
-      branch_patterns:
-        - pattern: 'main'
-          include: true
-        - pattern: 'develop'
-          include: true
-    
+        - pull_request
     scripts:
-      # 步骤1: 安装和配置 CocoaPods
-      - name: Install and configure CocoaPods
+      # 1️⃣ 更新 CocoaPods
+      - name: Update CocoaPods
         script: |
-          # 确保 CocoaPods 正确安装
-          gem install cocoapods --user-install
+          echo "💎 更新 RubyGems 和 CocoaPods"
+          sudo gem update --system
+          sudo gem install cocoapods
           pod --version
-          
-          # 设置 Pod 仓库
-          cd ios
-          pod repo update
-      
-      # 步骤2: 获取 Flutter 依赖
-      - name: Get Flutter dependencies
+      # 2️⃣ 获取 Flutter 依赖
+      - name: Flutter Pub Get
         script: |
+          echo "📦 获取 Flutter 依赖"
           flutter pub get
-          flutter clean
-      
-      # 步骤3: 安装 iOS 依赖
-      - name: Install iOS dependencies
+      # 3️⃣ 安装 iOS Pods
+      - name: Install iOS Pods
         script: |
+          echo "📱 安装 iOS Pods"
           cd ios
-          # 清除 Pods 缓存
-          rm -rf Pods Podfile.lock
-          # 重新安装 Pods
           pod install --repo-update
           cd ..
-      
-      # 步骤4: 初始化钥匙串（代码签名）
-      - name: Set up keychain
+      # 4️⃣ 构建 iOS Release（生成 IPA 并使用 Codemagic 签名）
+      - name: Build iOS Release
         script: |
-          keychain initialize
-      
-      # 步骤5: 构建 IPA
-      - name: Build iOS app
+          echo "🏗️ 构建 iOS Release"
+          flutter build ios --release --no-codesign
+      # 5️⃣ 可选：构建 Debug 版本（用于测试）
+      - name: Build iOS Debug
         script: |
-          # 使用 Flutter 直接构建 IPA
-          flutter build ipa --release \
-            --export-options-plist=ios/ExportOptions.plist
-          
-          # 或者使用 xcodebuild
-          # xcode-project build-ipa \
-          #   --project "$CM_BUILD_DIR/ios/Runner.xcodeproj" \
-          #   --scheme "Runner" \
-          #   --output "$CM_BUILD_DIR/build/ios/ipa"
-    
+          echo "🏗️ 构建 iOS Debug"
+          flutter build ios --debug --no-codesign
+
     artifacts:
+      # 生成的 Runner.app
+      - build/ios/iphoneos/Runner.app
+      # Release 构建生成的 IPA 文件（Codemagic 会根据签名生成）
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $CM_BUILD_DIR/flutter_drive.log
-    
-    publishing:
-      email:
-        recipients:
-          - 1093949326@qq.com
-      slack:
-        channel: '#builds'
-        notify_on_build_start: true
+
+    cache:
+      - flutter
+      - cocoapods
+      - $FLUTTER_ROOT/.pub-cache
